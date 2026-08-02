@@ -1,0 +1,13 @@
+{
+  "domain": "spa_pool",
+  "name": "Spa Pool",
+  "codeowners": [],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/mel9320107/spa-pool",
+  "integration_type": "device",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/mel9320107/spa-pool/issues",
+  "requirements": [],
+  "version": "0.2.0"
+}
