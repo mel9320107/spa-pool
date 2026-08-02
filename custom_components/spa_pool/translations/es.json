@@ -1,0 +1,156 @@
+{
+  "title": "Spa Pool",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Conectar con el puente del spa",
+        "description": "Introduce la dirección del puente transparente de RS-485 a TCP. La integración verificará que puede recibir un mensaje válido del spa.",
+        "data": {
+          "host": "Host",
+          "port": "Puerto"
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigurar el puente del spa",
+        "description": "Actualiza la dirección de red utilizada para conectarse al puente del spa.",
+        "data": {
+          "host": "Host",
+          "port": "Puerto"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "No se puede conectar con el puente ni recibir un mensaje válido del spa",
+      "already_configured": "Este puente del spa ya está configurado",
+      "unknown": "Error inesperado"
+    },
+    "abort": {
+      "already_configured": "Este puente del spa ya está configurado"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "current_temperature": {
+        "name": "Temperatura actual"
+      },
+      "target_temperature": {
+        "name": "Temperatura objetivo"
+      },
+      "operational_state": {
+        "name": "Estado de funcionamiento"
+      },
+      "initialisation_mode": {
+        "name": "Modo de inicialización"
+      },
+      "spa_time": {
+        "name": "Hora del spa"
+      },
+      "filter_mode": {
+        "name": "Modo de filtrado"
+      },
+      "reminder": {
+        "name": "Notificación del controlador"
+      },
+      "sensor_a_temperature": {
+        "name": "Temperatura del sensor A"
+      },
+      "sensor_b_temperature": {
+        "name": "Temperatura del sensor B"
+      },
+      "hold_timer": {
+        "name": "Temporizador de espera"
+      },
+      "test_mode_value": {
+        "name": "Valor del modo de prueba"
+      },
+      "wifi_state": {
+        "name": "Estado del Wi-Fi"
+      },
+      "last_valid_message": {
+        "name": "Último mensaje válido"
+      },
+      "raw_status_frame": {
+        "name": "Trama de estado sin procesar"
+      },
+      "heat_mode": {
+        "name": "Modo de calentamiento"
+      },
+      "temperature_range": {
+        "name": "Rango de temperatura"
+      }
+    },
+    "binary_sensor": {
+      "status_stream": {
+        "name": "Flujo de estado"
+      },
+      "heating": {
+        "name": "Calentando"
+      },
+      "circulation_pump": {
+        "name": "Bomba de circulación"
+      },
+      "filter_cycle_1": {
+        "name": "Ciclo de filtrado 1"
+      },
+      "filter_cycle_2": {
+        "name": "Ciclo de filtrado 2"
+      },
+      "panel_locked": {
+        "name": "Panel bloqueado"
+      },
+      "settings_locked": {
+        "name": "Ajustes bloqueados"
+      },
+      "reminder_active": {
+        "name": "Notificación del controlador activa"
+      },
+      "timeouts_active": {
+        "name": "Temporizaciones activas"
+      },
+      "sensor_ab_mode": {
+        "name": "Modo de sensor A/B"
+      }
+    },
+    "button": {
+      "restart_stream": {
+        "name": "Reiniciar flujo"
+      },
+      "sync_clock": {
+        "name": "Sincronizar reloj"
+      },
+      "refresh_fault_log": {
+        "name": "Actualizar registro de fallos"
+      },
+      "clear_reminder": {
+        "name": "Borrar notificación"
+      }
+    },
+    "event": {
+      "fault_log": {
+        "name": "Registro de fallos",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "fault": "Fallo",
+              "critical_fault": "Fallo crítico",
+              "unknown_fault": "Fallo desconocido"
+            }
+          }
+        }
+      }
+    },
+    "fan": {
+      "pump": {
+        "name": "Bomba {number}"
+      },
+      "blower": {
+        "name": "Soplador {number}"
+      }
+    },
+    "light": {
+      "spa_light": {
+        "name": "Luz {number}"
+      }
+    }
+  }
+}
