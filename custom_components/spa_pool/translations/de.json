@@ -1,0 +1,156 @@
+{
+  "title": "Spa Pool",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Mit der Spa-Bridge verbinden",
+        "description": "Geben Sie die Adresse der transparenten RS-485-zu-TCP-Bridge ein. Die Integration prüft, ob eine gültige Spa-Nachricht empfangen werden kann.",
+        "data": {
+          "host": "Host",
+          "port": "Port"
+        }
+      },
+      "reconfigure": {
+        "title": "Spa-Bridge neu konfigurieren",
+        "description": "Aktualisieren Sie die Netzwerkadresse für die Verbindung mit der Spa-Bridge.",
+        "data": {
+          "host": "Host",
+          "port": "Port"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Verbindung zur Bridge nicht möglich oder keine gültige Spa-Nachricht empfangen",
+      "already_configured": "Diese Spa-Bridge ist bereits konfiguriert",
+      "unknown": "Unerwarteter Fehler"
+    },
+    "abort": {
+      "already_configured": "Diese Spa-Bridge ist bereits konfiguriert"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "current_temperature": {
+        "name": "Aktuelle Temperatur"
+      },
+      "target_temperature": {
+        "name": "Zieltemperatur"
+      },
+      "operational_state": {
+        "name": "Betriebszustand"
+      },
+      "initialisation_mode": {
+        "name": "Initialisierungsmodus"
+      },
+      "spa_time": {
+        "name": "Spa-Zeit"
+      },
+      "filter_mode": {
+        "name": "Filtermodus"
+      },
+      "reminder": {
+        "name": "Steuerungsbenachrichtigung"
+      },
+      "sensor_a_temperature": {
+        "name": "Temperatur Sensor A"
+      },
+      "sensor_b_temperature": {
+        "name": "Temperatur Sensor B"
+      },
+      "hold_timer": {
+        "name": "Halte-Timer"
+      },
+      "test_mode_value": {
+        "name": "Testmoduswert"
+      },
+      "wifi_state": {
+        "name": "WLAN-Status"
+      },
+      "last_valid_message": {
+        "name": "Letzte gültige Nachricht"
+      },
+      "raw_status_frame": {
+        "name": "Unverarbeiteter Statusrahmen"
+      },
+      "heat_mode": {
+        "name": "Heizmodus"
+      },
+      "temperature_range": {
+        "name": "Temperaturbereich"
+      }
+    },
+    "binary_sensor": {
+      "status_stream": {
+        "name": "Statusdatenstrom"
+      },
+      "heating": {
+        "name": "Heizung"
+      },
+      "circulation_pump": {
+        "name": "Umwälzpumpe"
+      },
+      "filter_cycle_1": {
+        "name": "Filterzyklus 1"
+      },
+      "filter_cycle_2": {
+        "name": "Filterzyklus 2"
+      },
+      "panel_locked": {
+        "name": "Bedienfeld gesperrt"
+      },
+      "settings_locked": {
+        "name": "Einstellungen gesperrt"
+      },
+      "reminder_active": {
+        "name": "Steuerungsbenachrichtigung aktiv"
+      },
+      "timeouts_active": {
+        "name": "Zeitüberschreitungen aktiv"
+      },
+      "sensor_ab_mode": {
+        "name": "Sensor-A/B-Modus"
+      }
+    },
+    "button": {
+      "restart_stream": {
+        "name": "Datenstrom neu starten"
+      },
+      "sync_clock": {
+        "name": "Uhr synchronisieren"
+      },
+      "refresh_fault_log": {
+        "name": "Fehlerprotokoll aktualisieren"
+      },
+      "clear_reminder": {
+        "name": "Benachrichtigung löschen"
+      }
+    },
+    "event": {
+      "fault_log": {
+        "name": "Fehlerprotokoll",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "fault": "Fehler",
+              "critical_fault": "Kritischer Fehler",
+              "unknown_fault": "Unbekannter Fehler"
+            }
+          }
+        }
+      }
+    },
+    "fan": {
+      "pump": {
+        "name": "Pumpe {number}"
+      },
+      "blower": {
+        "name": "Luftgebläse {number}"
+      }
+    },
+    "light": {
+      "spa_light": {
+        "name": "Licht {number}"
+      }
+    }
+  }
+}
