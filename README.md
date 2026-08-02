@@ -2,7 +2,7 @@
 
 Home Assistant custom integration for a Balboa-compatible spa pool connected through an Elfin Wi-Fi RS-485-to-TCP adapter.
 
-The integration communicates directly with the spa controller over the local network. It does not require a cloud service or the identification/configuration handshake used by the official Balboa Wi-Fi module.
+The integration communicates directly with the spa controller over TCP on the local network. It does not require a cloud service, the identification/configuration handshake used by the official Balboa Wi-Fi module, or any intermediary software such as a Ruby proxy or MQTT broker.
 
 > [!WARNING]
 > This project has been developed and tested against a specific Balboa-compatible spa installation. Balboa controller configurations and message layouts vary. Confirm operation carefully before relying on it for unattended control.
