@@ -298,15 +298,18 @@ Please do not include public IP addresses, Wi-Fi credentials or other private ne
 
 ## Related projects and references
 
-This project benefited from the protocol research and implementations in the following repositories:
+This project was developed independently but benefited from the protocol research, documentation, and prior work of the Home Assistant and Balboa communities, particularly the following projects:
 
-- [ccutrer/balboa_worldwide_app](https://github.com/ccutrer/balboa_worldwide_app) — extensive reverse engineering of the Balboa spa protocol, including protocol documentation and RS-485/TCP behaviour.
-- [garbled1/pybalboa](https://github.com/garbled1/pybalboa) — asynchronous Python implementation of communication with Balboa spa controllers.
-- [garbled1/balboa_homeassistan](https://github.com/garbled1/balboa_homeassistan) — earlier Home Assistant integration built around `pybalboa`.
-- [home-assistant/core](https://github.com/home-assistant/core) — Home Assistant integration architecture and entity-platform patterns.
-- [hacs/integration](https://github.com/hacs/integration) — Home Assistant Community Store support for distributing custom integrations.
+- **ccutrer/balboa_worldwide_app** – extensive reverse engineering of the Balboa spa protocol, including protocol documentation and RS-485/TCP behaviour.
+- **garbled1/pybalboa** – asynchronous Python library for communicating with Balboa spa controllers, used by several other community projects.
+- **garbled1/balboa_homeassistan** – Home Assistant integration designed for use with the official Balboa Wi-Fi module.
+- **jshank/bwalink** – demonstrates communication with Balboa controllers via generic RS-485-to-TCP adapters, including the Elfin EW11.
+- **Home Assistant Core** – integration architecture, entity-platform patterns, and developer APIs.
+- **HACS** – framework and validation requirements for distributing Home Assistant custom integrations.
 
-These projects are references and prior art; they are not runtime dependencies of this integration.
+Unlike many existing solutions, **Spa Pool** communicates directly with the spa controller over a transparent TCP-to-RS-485 adapter. It does **not** require the official Balboa Wi-Fi module, a cloud service, a Ruby proxy, an MQTT broker, or any other intermediary software.
+
+These projects are acknowledged as valuable references and prior art but are **not** runtime dependencies of this integration.
 
 ## Licence
 
