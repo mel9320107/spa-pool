@@ -1,0 +1,156 @@
+{
+  "title": "Spa Pool",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Verbinden met de spa-bridge",
+        "description": "Voer het adres in van de transparante RS-485-naar-TCP-bridge. De integratie controleert of een geldig spa-bericht kan worden ontvangen.",
+        "data": {
+          "host": "Host",
+          "port": "Poort"
+        }
+      },
+      "reconfigure": {
+        "title": "Spa-bridge opnieuw configureren",
+        "description": "Werk het netwerkadres bij dat wordt gebruikt om verbinding te maken met de spa-bridge.",
+        "data": {
+          "host": "Host",
+          "port": "Poort"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Kan geen verbinding maken met de bridge of geen geldig spa-bericht ontvangen",
+      "already_configured": "Deze spa-bridge is al geconfigureerd",
+      "unknown": "Onverwachte fout"
+    },
+    "abort": {
+      "already_configured": "Deze spa-bridge is al geconfigureerd"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "current_temperature": {
+        "name": "Huidige temperatuur"
+      },
+      "target_temperature": {
+        "name": "Doeltemperatuur"
+      },
+      "operational_state": {
+        "name": "Bedrijfsstatus"
+      },
+      "initialisation_mode": {
+        "name": "Initialisatiemodus"
+      },
+      "spa_time": {
+        "name": "Spa-tijd"
+      },
+      "filter_mode": {
+        "name": "Filtermodus"
+      },
+      "reminder": {
+        "name": "Controllerbericht"
+      },
+      "sensor_a_temperature": {
+        "name": "Temperatuur sensor A"
+      },
+      "sensor_b_temperature": {
+        "name": "Temperatuur sensor B"
+      },
+      "hold_timer": {
+        "name": "Vasthoudtimer"
+      },
+      "test_mode_value": {
+        "name": "Waarde testmodus"
+      },
+      "wifi_state": {
+        "name": "Wi-Fi-status"
+      },
+      "last_valid_message": {
+        "name": "Laatste geldige bericht"
+      },
+      "raw_status_frame": {
+        "name": "Ruw statusframe"
+      },
+      "heat_mode": {
+        "name": "Verwarmingsmodus"
+      },
+      "temperature_range": {
+        "name": "Temperatuurbereik"
+      }
+    },
+    "binary_sensor": {
+      "status_stream": {
+        "name": "Statusstream"
+      },
+      "heating": {
+        "name": "Verwarming"
+      },
+      "circulation_pump": {
+        "name": "Circulatiepomp"
+      },
+      "filter_cycle_1": {
+        "name": "Filtercyclus 1"
+      },
+      "filter_cycle_2": {
+        "name": "Filtercyclus 2"
+      },
+      "panel_locked": {
+        "name": "Bedieningspaneel vergrendeld"
+      },
+      "settings_locked": {
+        "name": "Instellingen vergrendeld"
+      },
+      "reminder_active": {
+        "name": "Controllerbericht actief"
+      },
+      "timeouts_active": {
+        "name": "Time-outs actief"
+      },
+      "sensor_ab_mode": {
+        "name": "Sensor A/B-modus"
+      }
+    },
+    "button": {
+      "restart_stream": {
+        "name": "Stream opnieuw starten"
+      },
+      "sync_clock": {
+        "name": "Klok synchroniseren"
+      },
+      "refresh_fault_log": {
+        "name": "Foutenlogboek vernieuwen"
+      },
+      "clear_reminder": {
+        "name": "Bericht wissen"
+      }
+    },
+    "event": {
+      "fault_log": {
+        "name": "Foutenlogboek",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "fault": "Storing",
+              "critical_fault": "Kritieke storing",
+              "unknown_fault": "Onbekende storing"
+            }
+          }
+        }
+      }
+    },
+    "fan": {
+      "pump": {
+        "name": "Pomp {number}"
+      },
+      "blower": {
+        "name": "Luchtblazer {number}"
+      }
+    },
+    "light": {
+      "spa_light": {
+        "name": "Verlichting {number}"
+      }
+    }
+  }
+}
