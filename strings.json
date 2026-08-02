@@ -1,0 +1,156 @@
+{
+  "title": "Spa Pool",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to the spa bridge",
+        "description": "Enter the address of the transparent RS-485-to-TCP bridge. The integration will verify that it can receive a valid spa message.",
+        "data": {
+          "host": "Host",
+          "port": "Port"
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigure the spa bridge",
+        "description": "Update the network address used to connect to the spa bridge.",
+        "data": {
+          "host": "Host",
+          "port": "Port"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Unable to connect to the bridge or receive a valid spa message",
+      "already_configured": "This spa bridge is already configured",
+      "unknown": "Unexpected error"
+    },
+    "abort": {
+      "already_configured": "This spa bridge is already configured"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "current_temperature": {
+        "name": "Current temperature"
+      },
+      "target_temperature": {
+        "name": "Target temperature"
+      },
+      "operational_state": {
+        "name": "Operational state"
+      },
+      "initialisation_mode": {
+        "name": "Initialisation mode"
+      },
+      "spa_time": {
+        "name": "Spa time"
+      },
+      "filter_mode": {
+        "name": "Filter mode"
+      },
+      "reminder": {
+        "name": "Controller notification"
+      },
+      "sensor_a_temperature": {
+        "name": "Sensor A temperature"
+      },
+      "sensor_b_temperature": {
+        "name": "Sensor B temperature"
+      },
+      "hold_timer": {
+        "name": "Hold timer"
+      },
+      "test_mode_value": {
+        "name": "Test mode value"
+      },
+      "wifi_state": {
+        "name": "Wi-Fi state"
+      },
+      "last_valid_message": {
+        "name": "Last valid message"
+      },
+      "raw_status_frame": {
+        "name": "Raw status frame"
+      },
+      "heat_mode": {
+        "name": "Heat mode"
+      },
+      "temperature_range": {
+        "name": "Temperature range"
+      }
+    },
+    "binary_sensor": {
+      "status_stream": {
+        "name": "Status stream"
+      },
+      "heating": {
+        "name": "Heating"
+      },
+      "circulation_pump": {
+        "name": "Circulation pump"
+      },
+      "filter_cycle_1": {
+        "name": "Filter cycle 1"
+      },
+      "filter_cycle_2": {
+        "name": "Filter cycle 2"
+      },
+      "panel_locked": {
+        "name": "Panel locked"
+      },
+      "settings_locked": {
+        "name": "Settings locked"
+      },
+      "reminder_active": {
+        "name": "Controller notification active"
+      },
+      "timeouts_active": {
+        "name": "Timeouts active"
+      },
+      "sensor_ab_mode": {
+        "name": "Sensor A/B mode"
+      }
+    },
+    "button": {
+      "restart_stream": {
+        "name": "Restart stream"
+      },
+      "sync_clock": {
+        "name": "Synchronise clock"
+      },
+      "refresh_fault_log": {
+        "name": "Refresh fault log"
+      },
+      "clear_reminder": {
+        "name": "Clear notification"
+      }
+    },
+    "event": {
+      "fault_log": {
+        "name": "Fault log",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "fault": "Fault",
+              "critical_fault": "Critical fault",
+              "unknown_fault": "Unknown fault"
+            }
+          }
+        }
+      }
+    },
+    "fan": {
+      "pump": {
+        "name": "Pump {number}"
+      },
+      "blower": {
+        "name": "Blower {number}"
+      }
+    },
+    "light": {
+      "spa_light": {
+        "name": "Light {number}"
+      }
+    }
+  }
+}
