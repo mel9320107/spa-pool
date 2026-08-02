@@ -1,7 +1,7 @@
 {
   "domain": "spa_pool",
   "name": "Spa Pool",
-  "codeowners": [],
+  "codeowners": ["@mel9320107"],
   "config_flow": true,
   "dependencies": [],
   "documentation": "https://github.com/mel9320107/spa-pool",
