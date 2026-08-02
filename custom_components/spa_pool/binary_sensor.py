@@ -1,96 +1,293 @@
-"""Home Assistant integration for a Balboa-compatible spa TCP bridge."""
+"""Binary sensor platform for the Spa Pool integration."""
 
 from __future__ import annotations
 
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-import logging
-from typing import TypeAlias
+from typing import Any, Final, override
 
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_HOST, CONF_PORT, Platform
-from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryNotReady
-
-from .client import SpaPoolClient, SpaPoolConnectionError
-from .const import DEFAULT_PORT
-
-_LOGGER = logging.getLogger(__name__)
-_ENTRY_TITLE = "Spa Pool"
-
-PLATFORMS: tuple[Platform, ...] = (
-    Platform.CLIMATE,
-    Platform.SENSOR,
-    Platform.BINARY_SENSOR,
-    Platform.EVENT,
-    Platform.BUTTON,
+from homeassistant.components.binary_sensor import (
+    BinarySensorDeviceClass,
+    BinarySensorEntity,
+    BinarySensorEntityDescription,
 )
+from homeassistant.const import EntityCategory
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+
+from . import SpaPoolConfigEntry
+from .client import SpaPoolClient
+from .const import DOMAIN
+from .models import SpaFilterMode, SpaState
+
+ValueFn = Callable[[SpaPoolClient, SpaState | None], bool | None]
+AttributesFn = Callable[
+    [SpaPoolClient, SpaState | None],
+    Mapping[str, Any] | None,
+]
+AvailabilityFn = Callable[[SpaPoolClient, SpaState | None], bool]
 
 
-@dataclass(slots=True)
-class SpaPoolRuntimeData:
-    """Objects retained for the lifetime of one config entry."""
+@dataclass(frozen=True, kw_only=True)
+class SpaPoolBinarySensorEntityDescription(
+    BinarySensorEntityDescription
+):
+    """Describe one Spa Pool binary sensor."""
 
-    client: SpaPoolClient
+    value_fn: ValueFn
+    attributes_fn: AttributesFn | None = None
+    availability_fn: AvailabilityFn | None = None
 
 
-SpaPoolConfigEntry: TypeAlias = ConfigEntry[SpaPoolRuntimeData]
+def _always_available(
+    client: SpaPoolClient,
+    state: SpaState | None,
+) -> bool:
+    """Keep the connectivity entity available while the entry is loaded."""
+
+    return True
+
+
+def _state_available(
+    client: SpaPoolClient,
+    state: SpaState | None,
+) -> bool:
+    """Return whether a current decoded state is available."""
+
+    return client.available and state is not None
+
+
+BINARY_SENSOR_DESCRIPTIONS: Final[
+    tuple[SpaPoolBinarySensorEntityDescription, ...]
+] = (
+    SpaPoolBinarySensorEntityDescription(
+        key="status_stream",
+        translation_key="status_stream",
+        device_class=BinarySensorDeviceClass.CONNECTIVITY,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda client, state: client.available,
+        attributes_fn=lambda client, state: {
+            "tcp_connected": client.connected,
+            "last_valid_message": (
+                client.last_message_at.isoformat()
+                if client.last_message_at is not None
+                else None
+            ),
+        },
+        availability_fn=_always_available,
+    ),
+    SpaPoolBinarySensorEntityDescription(
+        key="heating",
+        translation_key="heating",
+        device_class=BinarySensorDeviceClass.HEAT,
+        value_fn=lambda client, state: (
+            state.is_heating if state is not None else None
+        ),
+        attributes_fn=lambda client, state: (
+            {
+                "heat_state": state.heat_state.label,
+                "heat_state_code": int(state.heat_state),
+            }
+            if state is not None
+            else None
+        ),
+        availability_fn=_state_available,
+    ),
+    SpaPoolBinarySensorEntityDescription(
+        key="circulation_pump",
+        translation_key="circulation_pump",
+        device_class=BinarySensorDeviceClass.RUNNING,
+        value_fn=lambda client, state: (
+            state.circulation_pump if state is not None else None
+        ),
+        availability_fn=_state_available,
+    ),
+    SpaPoolBinarySensorEntityDescription(
+        key="filter_cycle_1",
+        translation_key="filter_cycle_1",
+        device_class=BinarySensorDeviceClass.RUNNING,
+        icon="mdi:filter",
+        value_fn=lambda client, state: (
+            state.filter_mode
+            in (
+                SpaFilterMode.CYCLE_1,
+                SpaFilterMode.CYCLE_1_AND_2,
+            )
+            if state is not None
+            else None
+        ),
+        availability_fn=_state_available,
+    ),
+    SpaPoolBinarySensorEntityDescription(
+        key="filter_cycle_2",
+        translation_key="filter_cycle_2",
+        device_class=BinarySensorDeviceClass.RUNNING,
+        icon="mdi:filter",
+        value_fn=lambda client, state: (
+            state.filter_mode
+            in (
+                SpaFilterMode.CYCLE_2,
+                SpaFilterMode.CYCLE_1_AND_2,
+            )
+            if state is not None
+            else None
+        ),
+        availability_fn=_state_available,
+    ),
+    SpaPoolBinarySensorEntityDescription(
+        key="panel_locked",
+        translation_key="panel_locked",
+        icon="mdi:lock",
+        value_fn=lambda client, state: (
+            state.panel_locked if state is not None else None
+        ),
+        availability_fn=_state_available,
+    ),
+    SpaPoolBinarySensorEntityDescription(
+        key="settings_locked",
+        translation_key="settings_locked",
+        icon="mdi:lock-cog",
+        value_fn=lambda client, state: (
+            state.settings_locked if state is not None else None
+        ),
+        availability_fn=_state_available,
+    ),
+    SpaPoolBinarySensorEntityDescription(
+        key="reminder_active",
+        translation_key="reminder_active",
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        icon="mdi:wrench-clock",
+        value_fn=lambda client, state: (
+            state.has_active_reminder if state is not None else None
+        ),
+        attributes_fn=lambda client, state: (
+            {
+                "description": state.reminder.description,
+                "code": state.reminder.code,
+                "known": state.reminder.known,
+            }
+            if state is not None
+            else None
+        ),
+        availability_fn=_state_available,
+    ),
+    SpaPoolBinarySensorEntityDescription(
+        key="timeouts_active",
+        translation_key="timeouts_active",
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=lambda client, state: (
+            state.timeouts_active if state is not None else None
+        ),
+        availability_fn=_state_available,
+    ),
+    SpaPoolBinarySensorEntityDescription(
+        key="sensor_ab_mode",
+        translation_key="sensor_ab_mode",
+        icon="mdi:thermometer-lines",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=lambda client, state: (
+            state.sensor_ab_temperatures if state is not None else None
+        ),
+        attributes_fn=lambda client, state: (
+            {
+                "sensor_a_temperature": state.sensor_a_temperature,
+                "sensor_b_temperature": state.sensor_b_temperature,
+            }
+            if state is not None
+            else None
+        ),
+        availability_fn=_state_available,
+    ),
+)
 
 
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: SpaPoolConfigEntry,
-) -> bool:
-    """Set up Spa Pool from a config entry."""
-
-    # Older builds included the bridge IP address in the config-entry title.
-    # Normalise it here so existing installations acquire clean device/entity
-    # display names without requiring the integration to be removed.
-    if entry.title != _ENTRY_TITLE:
-        hass.config_entries.async_update_entry(entry, title=_ENTRY_TITLE)
-
-    host = entry.data[CONF_HOST]
-    port = entry.data.get(CONF_PORT, DEFAULT_PORT)
-    client = SpaPoolClient(host=host, port=port)
-
-    try:
-        await client.async_start()
-    except (SpaPoolConnectionError, OSError, TimeoutError) as err:
-        await client.async_stop()
-        raise ConfigEntryNotReady(
-            f"Unable to connect to the spa bridge at {host}:{port}"
-        ) from err
-
-    entry.runtime_data = SpaPoolRuntimeData(client=client)
-    entry.async_on_unload(entry.add_update_listener(_async_update_listener))
-
-    try:
-        await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    except Exception:
-        await client.async_stop()
-        raise
-
-    _LOGGER.info("Connected to spa bridge at %s:%s", host, port)
-    return True
-
-
-async def async_unload_entry(
-    hass: HomeAssistant,
-    entry: SpaPoolConfigEntry,
-) -> bool:
-    """Unload the integration without restarting Home Assistant."""
-
-    unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
-    if not unloaded:
-        return False
-
-    await entry.runtime_data.client.async_stop()
-    return True
-
-
-async def _async_update_listener(
-    hass: HomeAssistant,
-    entry: SpaPoolConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Reload the integration after host, port, or options change."""
+    """Set up Spa Pool binary sensors."""
 
-    await hass.config_entries.async_reload(entry.entry_id)
+    async_add_entities(
+        SpaPoolBinarySensorEntity(entry, description)
+        for description in BINARY_SENSOR_DESCRIPTIONS
+    )
+
+
+class SpaPoolBinarySensorEntity(BinarySensorEntity):
+    """Represent one Boolean spa condition."""
+
+    _attr_has_entity_name = True
+    _attr_should_poll = False
+
+    entity_description: SpaPoolBinarySensorEntityDescription
+
+    def __init__(
+        self,
+        entry: SpaPoolConfigEntry,
+        description: SpaPoolBinarySensorEntityDescription,
+    ) -> None:
+        """Initialise one binary sensor."""
+
+        self.entity_description = description
+        self._entry = entry
+        self._client = entry.runtime_data.client
+
+        self._attr_unique_id = f"{entry.entry_id}_{description.key}"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, entry.entry_id)},
+            name=entry.title,
+            manufacturer="Balboa-compatible",
+            model="RS-485 spa controller",
+        )
+
+    @property
+    @override
+    def available(self) -> bool:
+        """Return availability appropriate to this condition."""
+
+        availability_fn = self.entity_description.availability_fn
+        if availability_fn is None:
+            return self._client.available
+
+        return availability_fn(self._client, self._client.state)
+
+    @property
+    @override
+    def is_on(self) -> bool | None:
+        """Return the latest Boolean value from memory."""
+
+        return self.entity_description.value_fn(
+            self._client,
+            self._client.state,
+        )
+
+    @property
+    @override
+    def extra_state_attributes(self) -> Mapping[str, Any] | None:
+        """Return supporting protocol information."""
+
+        attributes_fn = self.entity_description.attributes_fn
+        if attributes_fn is None:
+            return None
+
+        return attributes_fn(self._client, self._client.state)
+
+    @override
+    async def async_added_to_hass(self) -> None:
+        """Subscribe to push updates from the persistent client."""
+
+        await super().async_added_to_hass()
+        self.async_on_remove(
+            self._client.async_add_listener(self._handle_client_update)
+        )
+
+    @callback
+    def _handle_client_update(self) -> None:
+        """Write the latest in-memory condition to Home Assistant."""
+
+        self.async_write_ha_state()
