@@ -61,7 +61,7 @@ def _state_available(
 ) -> bool:
     """Return whether a current decoded state is available."""
 
-    return client.available and state is not None
+    return client.state_available and state is not None
 
 
 def _message_available(
@@ -413,7 +413,7 @@ class SpaPoolSensorEntity(SensorEntity):
         if availability_fn is not None:
             return availability_fn(self._client, state)
 
-        return self._client.available
+        return self._client.state_available
 
     @property
     @override
@@ -523,7 +523,10 @@ class SpaPoolIndexedStateSensorEntity(SensorEntity):
     def available(self) -> bool:
         """Return whether this field is present in the current status frame."""
 
-        return self._client.available and self._decoded_value() is not None
+        return (
+            self._client.state_available
+            and self._decoded_value() is not None
+        )
 
     @property
     @override

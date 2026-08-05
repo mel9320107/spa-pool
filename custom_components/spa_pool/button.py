@@ -225,7 +225,13 @@ class SpaPoolButtonEntity(ButtonEntity):
         if not self.entity_description.requires_stream:
             return True
 
-        return self._client.available
+        if self.entity_description.action in (
+            SpaPoolButtonAction.SYNC_CLOCK,
+            SpaPoolButtonAction.CLEAR_REMINDER,
+        ):
+            return self._client.state_available
+
+        return self._client.transport_available
 
     @override
     async def async_press(self) -> None:
@@ -305,7 +311,7 @@ class SpaPoolButtonEntity(ButtonEntity):
         """Return current state or raise a user-visible communication error."""
 
         state = self._client.state
-        if state is None or not self._client.available:
+        if state is None or not self._client.state_available:
             raise HomeAssistantError("Spa status stream is unavailable")
 
         return state
@@ -344,7 +350,7 @@ class SpaPoolToggleButtonEntity(ButtonEntity):
     def available(self) -> bool:
         """Return whether the bridge currently accepts commands."""
 
-        return self._client.available
+        return self._client.transport_available
 
     @override
     async def async_press(self) -> None:
