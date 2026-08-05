@@ -55,7 +55,7 @@ def _state_available(
 ) -> bool:
     """Return whether a current decoded state is available."""
 
-    return client.available and state is not None
+    return client.state_available and state is not None
 
 
 BINARY_SENSOR_DESCRIPTIONS: Final[
@@ -66,12 +66,18 @@ BINARY_SENSOR_DESCRIPTIONS: Final[
         translation_key="status_stream",
         device_class=BinarySensorDeviceClass.CONNECTIVITY,
         entity_category=EntityCategory.DIAGNOSTIC,
-        value_fn=lambda client, state: client.available,
+        value_fn=lambda client, state: client.transport_available,
         attributes_fn=lambda client, state: {
             "tcp_connected": client.connected,
+            "state_available": client.state_available,
             "last_valid_message": (
                 client.last_message_at.isoformat()
                 if client.last_message_at is not None
+                else None
+            ),
+            "last_status_message": (
+                client.last_status_at.isoformat()
+                if client.last_status_at is not None
                 else None
             ),
         },
@@ -252,7 +258,7 @@ class SpaPoolBinarySensorEntity(BinarySensorEntity):
 
         availability_fn = self.entity_description.availability_fn
         if availability_fn is None:
-            return self._client.available
+            return self._client.transport_available
 
         return availability_fn(self._client, self._client.state)
 
