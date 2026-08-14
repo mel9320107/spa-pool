@@ -24,6 +24,7 @@ _LOGGER = logging.getLogger(__name__)
 _CONNECT_TIMEOUT = 10.0
 _FIRST_FRAME_TIMEOUT = 20.0
 _STREAM_STALE_TIMEOUT = 15.0
+_STATUS_STALE_TIMEOUT = 10.0
 _WRITE_TIMEOUT = 5.0
 _COMMAND_CONNECTION_TIMEOUT = 10.0
 _CLOSE_TIMEOUT = 5.0
@@ -87,7 +88,8 @@ class SpaPoolClient:
         self._device_configuration_condition = asyncio.Condition()
 
         self._first_frame_event = asyncio.Event()
-        self._available_event = asyncio.Event()
+        self._transport_available_event = asyncio.Event()
+        self._state_available_event = asyncio.Event()
 
         self._listeners: set[Listener] = set()
         self._message_listeners: set[Listener] = set()
@@ -109,12 +111,15 @@ class SpaPoolClient:
         self._ready_revision = 0
 
         self._connected = False
-        self._available = False
+        self._transport_available = False
+        self._state_available = False
+        self._status_stale_handle: asyncio.TimerHandle | None = None
         self._current_connection_received_frame = False
 
         self._last_frame: bytes | None = None
         self._last_message_type: str | None = None
         self._last_message_at: datetime | None = None
+        self._last_status_at: datetime | None = None
         self._last_error: str | None = None
 
         self._connection_attempts = 0
@@ -182,15 +187,37 @@ class SpaPoolClient:
 
     @property
     def available(self) -> bool:
+        """Return whether a recent regular status frame is available.
+
+        Kept as the state-availability interface used by existing entities.
+        Transport-only diagnostics should use ``transport_available``.
+        """
+
+        return self._state_available
+
+    @property
+    def transport_available(self) -> bool:
         """Return whether the current connection has supplied a valid frame."""
 
-        return self._available
+        return self._transport_available
+
+    @property
+    def state_available(self) -> bool:
+        """Return whether spa state is backed by a recent status frame."""
+
+        return self._state_available
 
     @property
     def last_message_at(self) -> datetime | None:
         """Return the UTC time of the most recent valid protocol frame."""
 
         return self._last_message_at
+
+    @property
+    def last_status_at(self) -> datetime | None:
+        """Return the UTC time of the most recent regular status frame."""
+
+        return self._last_status_at
 
     @property
     def last_frame(self) -> bytes | None:
@@ -269,7 +296,8 @@ class SpaPoolClient:
                 await task
 
         await self._async_close_connection()
-        self._set_available(False)
+        self._set_transport_available(False)
+        self._set_state_available(False)
 
     async def async_reconnect(self) -> None:
         """Manually rebuild the stream without restarting Home Assistant."""
@@ -292,7 +320,7 @@ class SpaPoolClient:
         """
 
         async with self._command_lock:
-            await self._async_wait_until_available()
+            await self._async_wait_until_transport_available()
             await self._async_write_frame(frame)
 
     async def async_send_and_wait(
@@ -305,7 +333,7 @@ class SpaPoolClient:
         """Queue a command and confirm it from a newer status message."""
 
         async with self._command_lock:
-            await self._async_wait_until_available()
+            await self._async_wait_until_state_available()
             revision = self._state_revision
             await self._async_write_frame(frame)
 
@@ -329,7 +357,7 @@ class SpaPoolClient:
         """Queue a fault-log request and await a newer fault entry."""
 
         async with self._command_lock:
-            await self._async_wait_until_available()
+            await self._async_wait_until_transport_available()
             revision = self._fault_revision
             await self._async_write_frame(frame)
 
@@ -352,7 +380,7 @@ class SpaPoolClient:
         """Queue the panel request and await a newer ``0A BF 2E`` frame."""
 
         async with self._command_lock:
-            await self._async_wait_until_available()
+            await self._async_wait_until_transport_available()
             revision = self._device_configuration_revision
             await self._async_write_frame(frame)
 
@@ -444,12 +472,23 @@ class SpaPoolClient:
 
                     await self._fault_condition.wait()
 
-    async def _async_wait_until_available(self) -> None:
+    async def _async_wait_until_transport_available(self) -> None:
+        """Wait briefly for a checksum-valid stream."""
+
+        try:
+            async with asyncio.timeout(_COMMAND_CONNECTION_TIMEOUT):
+                await self._transport_available_event.wait()
+        except TimeoutError as err:
+            raise SpaPoolNotConnectedError(
+                f"Spa bridge {self.host}:{self.port} is unavailable"
+            ) from err
+
+    async def _async_wait_until_state_available(self) -> None:
         """Wait briefly for a usable status stream."""
 
         try:
             async with asyncio.timeout(_COMMAND_CONNECTION_TIMEOUT):
-                await self._available_event.wait()
+                await self._state_available_event.wait()
         except TimeoutError as err:
             raise SpaPoolNotConnectedError(
                 f"Spa bridge {self.host}:{self.port} is unavailable"
@@ -508,7 +547,8 @@ class SpaPoolClient:
                 )
             finally:
                 await self._async_close_connection()
-                self._set_available(False)
+                self._set_transport_available(False)
+                self._set_state_available(False)
                 self._protocol.reset_stream()
 
             delay_before_retry = reconnect_delay
@@ -605,10 +645,9 @@ class SpaPoolClient:
         self._last_message_at = datetime.now(UTC)
         self._last_error = None
 
-        first_available_frame = not self._available
-        if first_available_frame:
-            self._available = True
-            self._available_event.set()
+        first_transport_frame = not self._transport_available
+        if first_transport_frame:
+            self._set_transport_available(True)
 
         self._first_frame_event.set()
 
@@ -647,6 +686,11 @@ class SpaPoolClient:
                     self._valid_status_count += 1
                 self._state_condition.notify_all()
 
+        if regular_status_received:
+            self._last_status_at = self._last_message_at
+            self._set_state_available(True)
+            self._arm_status_stale_timer()
+
         fault = update.fault
         if fault is not None:
             async with self._fault_condition:
@@ -657,7 +701,7 @@ class SpaPoolClient:
             self._notify_fault_listeners(fault)
 
         if (
-            first_available_frame
+            first_transport_frame
             or (state_received and self._state != previous_state)
         ):
             self._notify_listeners()
@@ -678,21 +722,60 @@ class SpaPoolClient:
             async with asyncio.timeout(_CLOSE_TIMEOUT):
                 await writer.wait_closed()
 
-    def _set_available(self, available: bool) -> None:
-        """Set protocol availability and notify entities when it changes."""
+    def _set_transport_available(self, available: bool) -> None:
+        """Set transport availability and notify entities when it changes."""
 
-        if self._available == available:
+        if self._transport_available == available:
             if not available:
-                self._available_event.clear()
+                self._transport_available_event.clear()
             return
 
-        self._available = available
+        self._transport_available = available
         if available:
-            self._available_event.set()
+            self._transport_available_event.set()
         else:
-            self._available_event.clear()
+            self._transport_available_event.clear()
+        self._notify_listeners()
+
+    def _set_state_available(self, available: bool) -> None:
+        """Set status freshness and notify entities when it changes."""
+
+        if self._state_available == available:
+            if not available:
+                self._state_available_event.clear()
+                self._cancel_status_stale_timer()
+            return
+
+        self._state_available = available
+        if available:
+            self._state_available_event.set()
+        else:
+            self._state_available_event.clear()
+            self._cancel_status_stale_timer()
 
         self._notify_listeners()
+
+    def _arm_status_stale_timer(self) -> None:
+        """Expire state independently if regular status traffic stops."""
+
+        self._cancel_status_stale_timer()
+        self._status_stale_handle = asyncio.get_running_loop().call_later(
+            _STATUS_STALE_TIMEOUT,
+            self._handle_status_stale,
+        )
+
+    def _cancel_status_stale_timer(self) -> None:
+        """Cancel the current state-freshness deadline."""
+
+        if self._status_stale_handle is not None:
+            self._status_stale_handle.cancel()
+            self._status_stale_handle = None
+
+    def _handle_status_stale(self) -> None:
+        """Mark retained state stale without dropping a healthy transport."""
+
+        self._status_stale_handle = None
+        self._set_state_available(False)
 
     def _notify_listeners(self) -> None:
         """Call listeners without allowing one entity to break the stream."""
@@ -726,7 +809,9 @@ class SpaPoolClient:
 
         return {
             "connected": self._connected,
-            "available": self._available,
+            "available": self._state_available,
+            "transport_available": self._transport_available,
+            "state_available": self._state_available,
             "state_revision": self._state_revision,
             "fault_revision": self._fault_revision,
             "device_configuration": {
@@ -764,6 +849,11 @@ class SpaPoolClient:
                 else None
             ),
             "last_message_type": self._last_message_type,
+            "last_status_at": (
+                self._last_status_at.isoformat()
+                if self._last_status_at is not None
+                else None
+            ),
             "last_error": self._last_error,
             "connection_attempts": self._connection_attempts,
             "reconnect_count": self._reconnect_count,
