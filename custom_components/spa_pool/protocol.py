@@ -271,7 +271,7 @@ class SpaPoolProtocol:
     ) -> SpaState | None:
         """Decode the 24-byte ``FF AF 13`` status payload."""
 
-        if len(payload) < 24:
+        if len(payload) < 23:
             self._invalid_payload_count += 1
             _LOGGER.warning(
                 "Discarding short spa status payload (%s bytes)",
