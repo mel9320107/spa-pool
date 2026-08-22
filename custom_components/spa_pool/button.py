@@ -11,9 +11,10 @@ from homeassistant.components.button import (
     ButtonEntity,
     ButtonEntityDescription,
 )
-from homeassistant.const import EntityCategory
+from homeassistant.const import CONF_HOST, EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import dt as dt_util
@@ -36,6 +37,7 @@ from .const import (
     MAX_LIGHTS,
     MAX_PUMPS,
 )
+from .elfin import ElfinRestartError, async_restart_elfin
 from .models import SpaState
 from .protocol import (
     SettingsCode,
@@ -51,6 +53,7 @@ class SpaPoolButtonAction(Enum):
     """Action performed by a stateless Spa Pool button."""
 
     RESTART_STREAM = auto()
+    RESTART_ELFIN_BRIDGE = auto()
     SYNC_CLOCK = auto()
     REFRESH_FAULT_LOG = auto()
     REFRESH_DEVICE_CONFIGURATION = auto()
@@ -74,6 +77,15 @@ BUTTON_DESCRIPTIONS: Final[
         device_class=ButtonDeviceClass.RESTART,
         entity_category=EntityCategory.DIAGNOSTIC,
         action=SpaPoolButtonAction.RESTART_STREAM,
+        requires_stream=False,
+    ),
+    SpaPoolButtonEntityDescription(
+        key="restart_elfin_bridge",
+        translation_key="restart_elfin_bridge",
+        device_class=ButtonDeviceClass.RESTART,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        action=SpaPoolButtonAction.RESTART_ELFIN_BRIDGE,
         requires_stream=False,
     ),
     SpaPoolButtonEntityDescription(
@@ -164,7 +176,6 @@ async def async_setup_entry(
         SpaPoolToggleButtonEntity(
             entry=entry,
             name=f"Light {index + 1} next mode",
-            # Preserve the unique ID used by the previous light-mode button.
             unique_key=f"light_{index + 1}_next_mode",
             toggle_item=ToggleItem(ToggleItem.LIGHT_1 + index),
             icon="mdi:palette-outline",
@@ -237,6 +248,10 @@ class SpaPoolButtonEntity(ButtonEntity):
             await self._async_restart_stream()
             return
 
+        if action is SpaPoolButtonAction.RESTART_ELFIN_BRIDGE:
+            await self._async_restart_elfin_bridge()
+            return
+
         try:
             if action is SpaPoolButtonAction.SYNC_CLOCK:
                 await self._async_sync_clock()
@@ -286,6 +301,19 @@ class SpaPoolButtonEntity(ButtonEntity):
         except (SpaPoolConnectionError, OSError, TimeoutError) as err:
             raise HomeAssistantError(
                 "Unable to restart the spa status stream"
+            ) from err
+
+    async def _async_restart_elfin_bridge(self) -> None:
+        """Restart an Elfin EW11 through its management interface."""
+
+        try:
+            await async_restart_elfin(
+                async_get_clientsession(self.hass),
+                str(self._entry.data[CONF_HOST]),
+            )
+        except ElfinRestartError as err:
+            raise HomeAssistantError(
+                "Unable to restart the Elfin bridge"
             ) from err
 
     async def _async_sync_clock(self) -> None:
