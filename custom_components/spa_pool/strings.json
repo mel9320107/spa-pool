@@ -115,6 +115,9 @@
       "restart_stream": {
         "name": "Restart stream"
       },
+      "restart_elfin_bridge": {
+        "name": "Restart Elfin bridge"
+      },
       "sync_clock": {
         "name": "Synchronise clock"
       },

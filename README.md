@@ -12,6 +12,7 @@ The integration communicates directly with the spa controller over TCP on the lo
 - Local, asynchronous TCP communication with the spa controller
 - Home Assistant UI configuration flow
 - Automatic reconnection after network or bridge interruptions
+- Optional Elfin EW11 software restart from Home Assistant
 - Current and target water temperature
 - Heating state and heat mode
 - Ready, Rest and Ready-in-Rest control
@@ -82,6 +83,7 @@ The exact Elfin configuration interface varies by model and firmware. The adapte
        ├── config_flow.py
        ├── const.py
        ├── diagnostics.py
+       ├── elfin.py
        ├── event.py
        ├── manifest.json
        ├── models.py
@@ -194,11 +196,14 @@ Some protocol-oriented entities are disabled by default and can be enabled from 
 Management and diagnostic actions include:
 
 - Restart stream
+- Restart Elfin bridge (disabled by default)
 - Synchronise clock
 - Refresh fault log
 - Refresh device configuration
 - Clear controller notification
 - Advance a pump, blower or light to its next state
+
+The **Restart Elfin bridge** button sends the same local management request as the EW11 web interface's Restart control (`CID 20003`). It is separate from **Restart stream**, which only rebuilds Home Assistant's TCP connection. The current implementation uses the stock EW11 HTTP Basic credentials `admin` / `admin` and is disabled by default so installations using other bridge hardware are unaffected.
 
 ### Fault-log event
 
@@ -256,6 +261,8 @@ Check that:
 ### Integration connects but no valid status is received
 
 Verify the serial wiring, polarity and bridge settings. A TCP connection alone does not prove that valid RS-485 data is reaching Home Assistant.
+
+If an EW11 remains reachable on the network and port `4257` accepts a TCP connection but the incoming data is no longer valid `0x7E`-framed spa traffic, enable the diagnostic **Restart Elfin bridge** button and restart the adapter. This performs a software restart of the EW11 without factory-resetting its configuration. The normal background reconnect loop should reconnect to the spa stream once the adapter is back online.
 
 Enable the diagnostic entities and inspect the integration logs:
 

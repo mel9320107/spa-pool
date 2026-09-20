@@ -234,8 +234,8 @@ class SpaPoolClient:
 
         return remove_listener
 
-    async def async_start(self) -> None:
-        """Start the reader and wait until at least one valid frame arrives."""
+    async def async_start(self, *, wait_for_frame: bool = True) -> None:
+        """Start the reader, optionally waiting for the first valid frame."""
 
         async with self._lifecycle_lock:
             if self._runner_task is None or self._runner_task.done():
@@ -244,6 +244,13 @@ class SpaPoolClient:
                     self._async_run(),
                     name=f"spa_pool_reader_{self.host}_{self.port}",
                 )
+
+        # Existing Home Assistant entries must be able to load even when the
+        # bridge is connected but emitting malformed data. This keeps recovery
+        # controls available while the reader continues reconnecting in the
+        # background. Config flow validation retains the strict default.
+        if not wait_for_frame:
+            return
 
         try:
             async with asyncio.timeout(_FIRST_FRAME_TIMEOUT):

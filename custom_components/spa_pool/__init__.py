@@ -53,7 +53,7 @@ async def async_setup_entry(
     client = SpaPoolClient(host=host, port=port)
 
     try:
-        await client.async_start()
+        await client.async_start(wait_for_frame=False)
     except (SpaPoolConnectionError, OSError, TimeoutError) as err:
         await client.async_stop()
         raise ConfigEntryNotReady(
@@ -69,7 +69,7 @@ async def async_setup_entry(
         await client.async_stop()
         raise
 
-    _LOGGER.info("Connected to spa bridge at %s:%s", host, port)
+    _LOGGER.info("Started spa bridge client for %s:%s", host, port)
     return True
 
 
