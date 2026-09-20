@@ -84,7 +84,6 @@ BUTTON_DESCRIPTIONS: Final[
         translation_key="restart_elfin_bridge",
         device_class=ButtonDeviceClass.RESTART,
         entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=False,
         action=SpaPoolButtonAction.RESTART_ELFIN_BRIDGE,
         requires_stream=False,
     ),
