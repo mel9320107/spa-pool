@@ -96,7 +96,7 @@ class SpaPoolClimateEntity(ClimateEntity):
     def available(self) -> bool:
         """Return whether a current status stream is available."""
 
-        return self._client.available and self._client.state is not None
+        return self._client.state_available and self._client.state is not None
 
     @property
     @override
@@ -221,7 +221,7 @@ class SpaPoolClimateEntity(ClimateEntity):
             return
 
         state = self._client.state
-        if state is None or not self._client.available:
+        if state is None or not self._client.state_available:
             raise HomeAssistantError("Spa status stream is unavailable")
 
         target = float(temperature)

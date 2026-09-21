@@ -63,7 +63,7 @@ class SpaPoolFaultEventEntity(EventEntity):
     def available(self) -> bool:
         """Return whether the spa status stream is available."""
 
-        return self._client.available
+        return self._client.transport_available
 
     @override
     async def async_added_to_hass(self) -> None:
